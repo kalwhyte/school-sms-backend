@@ -65,8 +65,6 @@ import authConfig from './config/auth.config';
     AppService,
 
     // ── Apply JwtAuthGuard globally ───────────────────────────────────────────
-    // Every route is protected by default. Use @Public() decorator on any
-    // endpoint that should be unauthenticated (e.g. /auth/request-otp).
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
