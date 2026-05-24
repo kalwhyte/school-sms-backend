@@ -60,10 +60,3 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 .commit_index
-
-2-script.sh
-3-script.sh
-3-script.sh
-script.sh
-
-.commit_index
