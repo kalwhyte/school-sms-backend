@@ -1,0 +1,17 @@
+{
+  "id": "0647aac2-e028-484f-bea8-1621e52d4730",
+  "schoolId": "77a86f00-6e42-4bcc-91ce-2e400ebbb3ef",
+  "name": "JSS 1",
+  "arm": "A",
+  "academicYear": "2024/2025",
+  "term": "first",
+  "createdAt": "2026-05-20T12:00:56.177Z",
+  "classTeacher": {
+    "id": "5a1bdb40-6f3a-434c-8b96-1a2ba64c567a",
+    "fullName": "Funmilayo Adejo",
+    "roleTitle": "Class Teacher",
+    "photoUrl": "https://res.cloudinary.com/demo/photo.jpg"
+  },
+  "studentCount": 0,
+  "subjectCount": 0
+}

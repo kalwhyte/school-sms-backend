@@ -1,0 +1,96 @@
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: school_sms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-whyte_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-school_pass}
+      POSTGRES_DB:       ${POSTGRES_DB:-school_sms_db}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-whyte_user} -d ${POSTGRES_DB:-school_sms_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: school_sms_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    # Redis 7.4 fix: pass flags as a list, not a folded scalar string
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD:-redis_pass_2024}
+      - --appendonly
+      - "yes"
+      - --loglevel
+      - notice
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-redis_pass_2024} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 8s
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass_2024}
+
+  # ── NestJS API ────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: school_sms_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV:              development
+      PORT:                  3000
+      # Use service names as hostnames inside Docker network
+      DATABASE_URL:          postgres://${POSTGRES_USER:-whyte_user}:${POSTGRES_PASSWORD:-school_pass}@postgres:5432/${POSTGRES_DB:-school_sms_db}
+      DATABASE_HOST:         postgres
+      DATABASE_PORT:         5432
+      DATABASE_USERNAME:     ${POSTGRES_USER:-whyte_user}
+      DATABASE_PASSWORD:     ${POSTGRES_PASSWORD:-school_pass}
+      DATABASE_NAME:         ${POSTGRES_DB:-school_sms_db}
+      REDIS_URL:             redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+      REDIS_HOST:            redis
+      REDIS_PORT:            6379
+      REDIS_PASSWORD:        ${REDIS_PASSWORD:-redis_pass_2024}
+      JWT_SECRET:            ${JWT_SECRET:-change_this_in_production}
+      JWT_EXPIRES_IN:        ${JWT_EXPIRES_IN:-15m}
+      AUTH_JWT_SECRET:       ${AUTH_JWT_SECRET:-change_this_in_production}
+      AUTH_REFRESH_SECRET:   ${AUTH_REFRESH_SECRET:-change_this_in_production}
+      PAYSTACK_SECRET_KEY:   ${PAYSTACK_SECRET_KEY:-}
+      PAYSTACK_PUBLIC_KEY:   ${PAYSTACK_PUBLIC_KEY:-}
+      TERMII_API_KEY:        ${TERMII_API_KEY:-}
+      TERMII_SENDER_ID:      ${TERMII_SENDER_ID:-SchoolSMS}
+      TERMII_BASE_URL:       ${TERMII_BASE_URL:-https://api.ng.termii.com}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY:    ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ..:/app
+      - /node_modules
+    command: sh /app/docker/start.sh
+
+volumes:
+  postgres_data:
+    name: school_sms_postgres_data

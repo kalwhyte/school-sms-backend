@@ -1,0 +1,13 @@
+# .dockerignore
+node_modules
+dist
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.docker
+coverage
+.nyc_output
+*.log
+prisma/migrations

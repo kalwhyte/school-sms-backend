@@ -1,0 +1,18 @@
+{
+  "id": "a68a09a3-631e-4dc3-8b93-8f4657cbb376",
+  "admissionNumber": "GFA010/2026/0001",
+  "fullName": "Emeka Okafor",
+  "dateOfBirth": "2008-04-15",
+  "gender": "male",
+  "guardianName": "Mrs. Ngozi Okafor",
+  "phone": "+2348012345556",
+  "email": "emeka@gmail.com",
+  "photoUrl": "https://res.cloudinary.com/demo/photo.png",
+  "isActive": true,
+  "classId": "0647aac2-e028-484f-bea8-1621e52d4730",
+  "currentClass": null,
+  "schoolId": "77a86f00-6e42-4bcc-91ce-2e400ebbb3ef",
+  "userId": "54522748-cede-4cb3-ad77-e330e1777e37",
+  "createdAt": "2026-05-20T12:03:44.296Z",
+  "updatedAt": "2026-05-20T12:03:44.296Z"
+}
