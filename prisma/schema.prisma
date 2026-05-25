@@ -415,7 +415,7 @@ model ReportCard {
   term         Term
   academicYear String    @map("academic_year")
 
-  classPosdition Int? @map("class_position")
+  classPosition Int? @map("class_position")
   totalStudentsInClass Int? @map("total_students_in_class")
   totalScore Decimal? @map("total_score") @db.Decimal
   averageScore Decimal?  @map("average_score") @db.Decimal

@@ -9,7 +9,7 @@ import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { StorageService } from '../../infrastructure/storage/storage.service';
 import { OnboardSchoolDto } from './dto/onboard-school.dto';
 import { UpdateSchoolDto } from './dto/update-schools.dto';
-import { SchoolRow, SchoolWithStatsRow } from './interfaces/schoolRow';
+import { SchoolRow, SchoolWithStatsRow } from './interfaces/index.interface';
 
 @Injectable()
 export class SchoolsService {

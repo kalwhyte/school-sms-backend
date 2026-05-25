@@ -1,4 +1,3 @@
-// export class CreateReport-cardsDto {}
 import { IsEnum, IsString, IsNotEmpty, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Term } from '@prisma/client';
