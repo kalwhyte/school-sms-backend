@@ -15,6 +15,19 @@ export enum TermEnum {
   third = 'third',
 }
 
+export enum ClassLevel {
+  nursery = 'Nursery',
+  primary = 'Primary',
+  jss1 = 'JSS',
+  sss1 = 'SSS',
+}
+
+export enum ClassStream {
+  science = 'Science',
+  arts = 'Arts',
+  commercial = 'Commercial',
+}
+
 export class CreateClassDto {
   @ApiProperty({ example: 'JSS 1' })
   @IsString()

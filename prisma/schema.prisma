@@ -216,7 +216,7 @@ model Class {
   schoolId     String   @map("school_id") @db.Uuid
   name         String
   arm          String
-  level        ClassLevel
+  level        ClassLevel?
   stream       ClassStream?
   teacherId    String?  @map("teacher_id") @db.Uuid
   academicYear String   @map("academic_year")
