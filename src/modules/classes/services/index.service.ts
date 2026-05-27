@@ -1,16 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
-import { ClassRow } from '../interfaces/index.interface';
+import { ClassRow, FormattedClass } from '../interfaces/index.interface';
 
 @Injectable()
 export class ClassHelperService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─────────────────────────────────────────────
-  // PUBLIC HELPERS
-  // ─────────────────────────────────────────────
+  // ─── Assertions ───────────────────────────────────────────────────────────
 
-  async assertClassExists(schoolId: string, classId: string) {
+  async assertClassExists(schoolId: string, classId: string): Promise<void> {
     const cls = await this.prisma.class.findFirst({
       where: { id: classId, schoolId },
       select: { id: true },
@@ -18,20 +16,19 @@ export class ClassHelperService {
     if (!cls) throw new NotFoundException('Class not found.');
   }
 
-  async assertStaffExists(schoolId: string, staffId: string) {
+  async validateStaff(schoolId: string, staffId: string): Promise<void> {
     const staff = await this.prisma.staff.findFirst({
       where: { id: staffId, schoolId, isActive: true },
       select: { id: true },
     });
-    if (!staff)
+    if (!staff) {
       throw new NotFoundException(
-        `Staff member ${staffId} not found in this school.`,
+        `Staff member ${staffId} not found or inactive in this school.`,
       );
+    }
   }
 
-  async validateStaff(schoolId: string, staffId: string): Promise<void> {
-    await this.assertStaffExists(schoolId, staffId);
-  }
+  // ─── Prisma select shape ──────────────────────────────────────────────────
 
   classSelect() {
     return {
@@ -39,6 +36,8 @@ export class ClassHelperService {
       schoolId: true,
       name: true,
       arm: true,
+      level: true,
+      stream: true,
       academicYear: true,
       term: true,
       createdAt: true,
@@ -59,18 +58,22 @@ export class ClassHelperService {
     } as const;
   }
 
-  formatClass(cls: ClassRow) {
+  // ─── Response formatter ───────────────────────────────────────────────────
+
+  formatClass(cls: ClassRow): FormattedClass {
     return {
       id: cls.id,
       schoolId: cls.schoolId,
       name: cls.name,
       arm: cls.arm,
+      level: cls.level,
+      stream: cls.stream ?? null,
       academicYear: cls.academicYear,
       term: cls.term,
       createdAt: cls.createdAt,
       classTeacher: cls.classTeacher ?? null,
-      studentCount: (cls._count as { students: number })?.students ?? 0,
-      subjectCount: (cls._count as { subjects: number })?.subjects ?? 0,
+      studentCount: cls._count?.students ?? 0,
+      subjectCount: cls._count?.subjects ?? 0,
     };
   }
 }

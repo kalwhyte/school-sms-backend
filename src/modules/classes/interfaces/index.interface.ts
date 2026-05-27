@@ -1,20 +1,42 @@
-export interface ClassRow {
-  _count: any;
-  id?: string;
-  name: string;
-  gradeLevel: string;
-  schoolId: string;
-  subjectId: string;
-  arm: string;
-  academicYear: string;
-  term: string;
-  classTeacher: string;
-  studentCount: number;
-  subjectCount: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+import { ClassLevel, ClassStream, Term } from '@prisma/client';
+
+export interface ClassTeacherRow {
+  id: string;
+  fullName: string;
+  roleTitle: string | null;
+  photoUrl: string | null;
 }
 
-export type CreateClassDto = Omit<ClassRow, 'id' | 'createdAt' | 'updatedAt'>;
+export interface ClassCountRow {
+  students: number;
+  subjects: number;
+}
 
-export type UpdateClassDto = Partial<CreateClassDto>;
+export interface ClassRow {
+  id: string;
+  schoolId: string;
+  name: string;
+  arm: string;
+  level: ClassLevel;
+  stream: ClassStream | null;
+  academicYear: string;
+  term: Term;
+  createdAt: Date;
+  classTeacher: ClassTeacherRow | null;
+  _count: ClassCountRow;
+}
+
+export interface FormattedClass {
+  id: string;
+  schoolId: string;
+  name: string;
+  arm: string;
+  level: ClassLevel;
+  stream: ClassStream | null;
+  academicYear: string;
+  term: Term;
+  createdAt: Date;
+  classTeacher: ClassTeacherRow | null;
+  studentCount: number;
+  subjectCount: number;
+}

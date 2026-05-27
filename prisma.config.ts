@@ -1,6 +1,9 @@
 // prisma.config.ts  (project root — same level as package.json)
 import path from 'node:path';
 import { defineConfig } from 'prisma/config';
+import { config } from 'dotenv';
+
+config();
 
 export default defineConfig({
   schema: path.join('prisma', 'schema.prisma'),
