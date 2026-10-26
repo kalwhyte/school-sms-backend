@@ -7,6 +7,7 @@ import {
   Length,
   IsOptional,
   IsStrongPassword,
+  IsEmail,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateSchoolDto } from './create-schools.dto';
@@ -23,6 +24,11 @@ export class FirstAdminDto {
     },
   )
   phone?: string;
+
+  @ApiPropertyOptional({ example: 'principal@example.com' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
 
   @ApiProperty({ example: 'Kal Whyte' })
   @IsString()

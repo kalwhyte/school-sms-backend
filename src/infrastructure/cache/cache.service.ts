@@ -1,45 +1,32 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { Injectable } from '@nestjs/common';
+import { RedisService } from './redis.service';
 
 @Injectable()
-export class CacheService implements OnModuleInit, OnModuleDestroy {
-  private redis: Redis;
-
-  constructor(private readonly config: ConfigService) {
-    this.redis = new Redis({
-      host: this.config.get<string>('REDIS_HOST', 'localhost'),
-      port: this.config.get<number>('REDIS_PORT', 6379),
-      password: this.config.get<string>('REDIS_PASSWORD'),
-      keyPrefix: 'school_sms:',
-    });
-  }
-
-  async onModuleInit() {
-    // Connection is handled automatically by ioredis
-  }
-
-  async onModuleDestroy() {
-    await this.redis.quit();
-  }
+export class CacheService {
+  constructor(private readonly redisService: RedisService) {}
 
   async get(key: string): Promise<string | null> {
-    return this.redis.get(key);
+    return this.redisService.get(key);
   }
 
   async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
-    if (ttlSeconds) {
-      await this.redis.set(key, value, 'EX', ttlSeconds);
-    } else {
-      await this.redis.set(key, value);
-    }
+    await this.redisService.set(key, value, ttlSeconds);
   }
 
   async del(key: string): Promise<void> {
-    await this.redis.del(key);
+    await this.redisService.del(key);
   }
 
   async ttl(key: string): Promise<number> {
-    return this.redis.ttl(key);
+    return this.redisService.ttl(key);
+  }
+
+  async getJSON<T>(key: string): Promise<T | null> {
+    const value = await this.get(key);
+    return value ? (JSON.parse(value) as T) : null;
+  }
+
+  async setJSON<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    await this.set(key, JSON.stringify(value), ttlSeconds);
   }
 }

@@ -12,7 +12,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiResponse,
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 
 import { SubjectsService } from './subjects.service';
 import { CreateSubjectDto } from './dto/create-subjects.dto';
@@ -50,6 +56,15 @@ export class SubjectsController {
     @Query('classId') classId?: string,
   ) {
     return this.subjectsService.findAll(user.schoolId, classId);
+  }
+
+  // GET /subjects/directory
+  @Get('directory')
+  @ApiOperation({
+    summary: 'Get school-wide subject directory grouped by subject name',
+  })
+  getDirectory(@CurrentUser() user: JWTStrategy.ValidatedUser) {
+    return this.subjectsService.findDirectory(user.schoolId);
   }
 
   // GET /subjects/:id
@@ -122,5 +137,19 @@ export class SubjectsController {
       id,
       periodId,
     );
+  }
+
+  @Get(':id/details')
+  @ApiOperation({
+    summary: 'Get complete subject details, assessments and resources',
+  })
+  @ApiParam({ name: 'id', description: 'Subject UUID' })
+  @ApiResponse({ status: 200, description: 'Subject details retrieved.' })
+  @ApiResponse({ status: 404, description: 'Subject not found.' })
+  getDetails(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JWTStrategy.ValidatedUser,
+  ) {
+    return this.subjectsService.findDetails(user.schoolId, id);
   }
 }

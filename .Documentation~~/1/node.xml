@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cherrytree>
+  <node unique_id="1" master_id="0" name="sms" prog_lang="custom-colors" tags="" readonly="0" nosearch_me="0" nosearch_ch="0" custom_icon_id="0" is_bold="0" foreground="#99c1f1" ts_creation="1791733882" ts_lastsave="1791734364">
+    <rich_text>Starting script
+./start.sh
+
+create school first, it comes with a user the principal during creation.
+school must belong to a user
+use the user token and generate refresh token before logging in.
+user request for OTP using their registered phone number
+
+
+{   
+	"school": {    
+			 "id": "56a4625b-b58b-4190-8510-53c44e724fd4",
+			"name": "Whyte Academy",     
+			"address": "12 Aba Road, Port Harcourt, Rivers State",     
+			"logoUrl": "https://res.cloudinary.com/demo/logo.png",     
+			"schoolCode": "GFA011",    
+			 "subscriptionTier": "free",    
+			 "currency": "NGN",     "isActive": true,     
+			"createdAt": "2026-10-11T15:54:17.727Z",     
+			"updatedAt": "2026-10-11T15:54:17.727Z"   },   
+	"admin": {    
+			 "userId": "78e1d144-49b0-4feb-8ddf-a8aeb5f7fd2f",    
+			 "phone": "+2348012345671",     
+			"role": "admin",     	
+			"fullName": "Kal Whyte"   
+	}
+ }
+ 
+			</rich_text>
+  </node>
+</cherrytree>

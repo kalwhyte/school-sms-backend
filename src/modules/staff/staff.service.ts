@@ -14,6 +14,7 @@ import { UpdateStaffDto } from './dto/update-staff.dto';
 import { StaffQueryDto } from './dto/staff-query.dto';
 import { StaffRow } from './interfaces/staffRow';
 import { ALLOWED_STAFF_ROLES, StaffRole } from './guards/roles.guard';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class StaffService {
@@ -32,8 +33,8 @@ export class StaffService {
       );
     }
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { schoolId_phone: { schoolId, phone: dto.phone! } },
+    const existingUser = await this.prisma.user.findFirst({
+      where: { phone: dto.phone!, schoolId },
     });
     if (existingUser) {
       throw new ConflictException(
@@ -46,7 +47,7 @@ export class StaffService {
         data: {
           schoolId,
           phone: dto.phone!,
-          role: dto.role as StaffRole,
+          role: dto.role as Prisma.UserCreateInput['role'],
           isActive: true,
         },
       });
@@ -73,36 +74,70 @@ export class StaffService {
 
   async findAll(schoolId: string, query: StaffQueryDto) {
     const { page = 1, limit = 20, search, role, isActive } = query;
+
     const skip = (page - 1) * limit;
 
-    const where = {
+    const searchTerm = search?.trim();
+
+    const where: Prisma.StaffWhereInput = {
       schoolId,
       ...(isActive !== undefined && { isActive }),
-      ...(role && { user: { role: role as StaffRole } }),
-      ...(search && {
-        fullName: { contains: search, mode: 'insensitive' as const },
+      ...(role && {
+        user: {
+          is: {
+            role: role as unknown as Prisma.UserWhereInput['role'],
+          },
+        },
+      }),
+      ...(searchTerm && {
+        OR: [
+          {
+            fullName: {
+              contains: searchTerm,
+              mode: 'insensitive',
+            },
+          },
+          {
+            user: {
+              is: {
+                phone: {
+                  contains: searchTerm,
+                },
+              },
+            },
+          },
+        ],
       }),
     };
 
-    const [data, total] = await Promise.all([
+    const [data, total] = await this.prisma.$transaction([
       this.prisma.staff.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { fullName: 'asc' },
-        select: this.helper.staffSelect(),
+        orderBy: {
+          fullName: 'asc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              role: true,
+              isActive: true,
+            },
+          },
+        },
       }),
       this.prisma.staff.count({ where }),
     ]);
 
     return {
-      data: (data as unknown as StaffRow[]).map((s) =>
-        this.helper.formatStaff(s),
-      ),
+      data,
       meta: {
-        total,
         page,
         limit,
+        total,
         totalPages: Math.ceil(total / limit),
       },
     };
@@ -144,7 +179,7 @@ export class StaffService {
       if (dto.role) {
         await tx.user.update({
           where: { id: (staff as unknown as StaffRow).user.id },
-          data: { role: dto.role as StaffRole },
+          data: { role: dto.role as Prisma.UserCreateInput['role'] },
         });
       }
 

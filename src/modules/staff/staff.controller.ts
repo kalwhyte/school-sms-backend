@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 import { StaffService } from './staff.service';
@@ -59,8 +60,15 @@ export class StaffController {
   // GET /staff
   @Get()
   @ApiOperation({
-    summary: 'List staff (paginated, filterable by role / name)',
+    summary: 'List staff',
+    description:
+      'Returns paginated staff records for the authenticated user’s school. Supports name/phone search and role/active-status filters.',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'role', required: false, type: String })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
   findAll(
     @Query() query: StaffQueryDto,
     @CurrentUser() user: jwtStrategy.ValidatedUser,

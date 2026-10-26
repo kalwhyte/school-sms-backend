@@ -111,8 +111,11 @@ export class UsersService {
 
     // Phone uniqueness guard within the school
     if (dto.phone) {
-      const conflict = await this.prisma.user.findUnique({
-        where: { schoolId_phone: { schoolId, phone: dto.phone } },
+      const conflict = await this.prisma.user.findFirst({
+        where: {
+          phone: dto.phone,
+          schoolId,
+        },
         select: { id: true },
       });
       if (conflict && conflict.id !== targetUserId) {

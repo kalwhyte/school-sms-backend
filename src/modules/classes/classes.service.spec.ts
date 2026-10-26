@@ -8,20 +8,21 @@ import {
 
 import { ClassesService } from './classes.service';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { TermEnum } from './dto/create-classes.dto';
+
+const mockAsync = () => jest.fn<(...args: unknown[]) => Promise<unknown>>();
 
 const mockPrisma = {
   class: {
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
+    findUnique: mockAsync(),
+    findFirst: mockAsync(),
+    findMany: mockAsync(),
+    count: mockAsync(),
+    create: mockAsync(),
+    update: mockAsync(),
+    delete: mockAsync(),
   },
-  staff: { findFirst: jest.fn() },
-  classEnrollment: { count: jest.fn() },
+  staff: { findFirst: mockAsync() },
+  classEnrollment: { count: mockAsync() },
 };
 
 const schoolId = 'school-uuid-001';
@@ -42,15 +43,16 @@ const fakeClassRow = {
 const createDto = {
   name: 'JSS 1',
   arm: 'A',
+  level: 'JSS 1',
   academicYear: '2024/2025',
-  term: TermEnum.first,
+  term: 'first',
 };
 
 describe('ClassesService', () => {
   let service: ClassesService;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClassesService,

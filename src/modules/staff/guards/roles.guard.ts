@@ -10,5 +10,9 @@ export const ALLOWED_STAFF_ROLES = [
   'admin',
   'class_teacher',
   'subject_teacher',
+  'principal',
+  'bursar',
+  'vice_principal',
+  'counsellor',
 ] as const;
 export type StaffRole = (typeof ALLOWED_STAFF_ROLES)[number];

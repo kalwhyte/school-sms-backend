@@ -1,26 +1,29 @@
-import { IsString, IsNotEmpty, IsMobilePhone, Length } from 'class-validator';
+import { IsString, IsNotEmpty, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyOtpDto {
-  @ApiProperty({ example: '+2348012345678' })
+  @ApiProperty({ example: 'GFA001' })
   @IsString()
   @IsNotEmpty()
-  @IsMobilePhone(
-    'en-NG',
-    {},
-    { message: 'phone must be a valid Nigerian mobile number' },
-  )
-  phone!: string;
-
-  @ApiProperty({ example: '482910', description: '6-digit OTP sent via SMS' })
-  @IsString()
-  @IsNotEmpty()
-  @Length(6, 6, { message: 'otp must be exactly 6 digits' })
-  otp!: string;
-
-  @ApiProperty({ example: '482910', description: '6-digit OTP sent via SMS' })
-  @IsString()
-  @IsNotEmpty()
-  @Length(6, 6, { message: 'otp must be exactly 6 digits' })
+  @Length(3, 20)
+  @Matches(/^[A-Za-z0-9_-]+$/)
   schoolCode!: string;
+
+  @ApiProperty({
+    example: '+2348012345678',
+    description: 'The same phone number or email used to request the OTP',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Length(3, 254)
+  identifier!: string;
+
+  @ApiProperty({ example: '482910' })
+  @IsString()
+  @IsNotEmpty()
+  @Length(6, 6)
+  @Matches(/^\d{6}$/, {
+    message: 'otp must contain exactly 6 digits',
+  })
+  otp!: string;
 }

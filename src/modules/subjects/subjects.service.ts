@@ -241,4 +241,217 @@ export class SubjectsService {
     await this.prisma.timetablePeriod.delete({ where: { id: periodId } });
     return { message: 'Timetable period removed.' };
   }
+
+  async findDirectory(schoolId: string) {
+    const subjects = await this.prisma.subject.findMany({
+      where: { schoolId },
+      orderBy: [{ name: 'asc' }, { class: { name: 'asc' } }],
+      select: {
+        id: true,
+        name: true,
+        isCore: true,
+        classId: true,
+        teacherId: true,
+
+        class: {
+          select: {
+            id: true,
+            name: true,
+            arm: true,
+            level: true,
+            academicYear: true,
+            term: true,
+            classTeacher: {
+              select: {
+                id: true,
+                fullName: true,
+                roleTitle: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+
+        teacher: {
+          select: {
+            id: true,
+            fullName: true,
+            roleTitle: true,
+            subjectSpecialty: true,
+            photoUrl: true,
+          },
+        },
+
+        _count: {
+          select: {
+            assessments: true,
+          },
+        },
+      },
+    });
+
+    const grouped = new Map<
+      string,
+      {
+        name: string;
+        classes: typeof subjects;
+      }
+    >();
+
+    for (const subject of subjects) {
+      const key = subject.name.trim().toLocaleLowerCase();
+      const group = grouped.get(key);
+
+      if (group) {
+        group.classes.push(subject);
+      } else {
+        grouped.set(key, {
+          name: subject.name,
+          classes: [subject],
+        });
+      }
+    }
+
+    return {
+      data: Array.from(grouped.values()).map((group) => ({
+        name: group.name,
+        classCount: group.classes.length,
+
+        teachers: Array.from(
+          new Map(
+            group.classes
+              .filter((subject) => subject.teacher)
+              .map((subject) => [subject.teacher!.id, subject.teacher!]),
+          ).values(),
+        ),
+
+        classes: group.classes.map((subject) => ({
+          subjectId: subject.id,
+          classId: subject.class.id,
+          className: subject.class.name,
+          arm: subject.class.arm,
+          level: subject.class.level,
+          academicYear: subject.class.academicYear,
+          term: subject.class.term,
+          isCore: subject.isCore,
+
+          subjectTeacher: subject.teacher,
+
+          classTeacher: subject.class.classTeacher,
+
+          assessmentCount: subject._count.assessments,
+        })),
+      })),
+      meta: {
+        totalSubjectRecords: subjects.length,
+        totalUniqueSubjects: grouped.size,
+      },
+    };
+  }
+
+  async findDetails(schoolId: string, subjectId: string) {
+    const subject = await this.prisma.subject.findFirst({
+      where: {
+        id: subjectId,
+        schoolId,
+      },
+      select: {
+        id: true,
+        name: true,
+        isCore: true,
+        createdAt: true,
+
+        class: {
+          select: {
+            id: true,
+            name: true,
+            arm: true,
+            level: true,
+            academicYear: true,
+            term: true,
+
+            classTeacher: {
+              select: {
+                id: true,
+                fullName: true,
+                roleTitle: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+
+        teacher: {
+          select: {
+            id: true,
+            fullName: true,
+            roleTitle: true,
+            subjectSpecialty: true,
+            photoUrl: true,
+          },
+        },
+
+        timetable: {
+          orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+          select: {
+            id: true,
+            dayOfWeek: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
+
+        assessments: {
+          orderBy: { date: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            maxScore: true,
+            passingScore: true,
+            date: true,
+            isPublished: true,
+            academicYear: true,
+            term: true,
+            _count: {
+              select: { scores: true },
+            },
+          },
+        },
+
+        assignments: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            instructions: true,
+            dueDate: true,
+            attachmentUrl: true,
+            isPublished: true,
+            createdAt: true,
+          },
+        },
+
+        resources: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            author: true,
+            publisher: true,
+            edition: true,
+            description: true,
+            resourceUrl: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found.');
+    }
+
+    return subject;
+  }
 }

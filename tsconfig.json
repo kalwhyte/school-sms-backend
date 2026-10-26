@@ -18,6 +18,7 @@
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
+    "types": ["jest"],
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },

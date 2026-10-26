@@ -6,8 +6,8 @@ services:
     container_name: school_sms_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${POSTGRES_USER:-whyte_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-school_pass}
+      POSTGRES_USER:     ${POSTGRES_USER:-school_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-school_user}
       POSTGRES_DB:       ${POSTGRES_DB:-school_sms_db}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"
@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-whyte_user} -d ${POSTGRES_DB:-school_sms_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-school_user} -d ${POSTGRES_DB:-school_sms_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -62,11 +62,11 @@ services:
       NODE_ENV:              development
       PORT:                  3000
       # Use service names as hostnames inside Docker network
-      DATABASE_URL:          postgres://${POSTGRES_USER:-whyte_user}:${POSTGRES_PASSWORD:-school_pass}@postgres:5432/${POSTGRES_DB:-school_sms_db}
+      DATABASE_URL:          postgres://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-school_pass}@postgres:5432/${POSTGRES_DB:-school_sms_db}
       DATABASE_HOST:         postgres
       DATABASE_PORT:         5432
-      DATABASE_USERNAME:     ${POSTGRES_USER:-whyte_user}
-      DATABASE_PASSWORD:     ${POSTGRES_PASSWORD:-school_pass}
+      DATABASE_USERNAME:     ${POSTGRES_USER:-school_user}
+      DATABASE_PASSWORD:     ${POSTGRES_PASSWORD:-school_user}
       DATABASE_NAME:         ${POSTGRES_DB:-school_sms_db}
       REDIS_URL:             redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
       REDIS_HOST:            redis
@@ -84,6 +84,12 @@ services:
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY:    ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM: ${SMTP_FROM}
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:

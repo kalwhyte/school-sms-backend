@@ -2,7 +2,7 @@
 // Shared constants, static data, and helper functions used across seed files.
 
 import { UserRole } from '@prisma/client';
-import * as bcrypt from 'bcrypt'; // bcryptjs has no native bindings — no build issues
+import * as bcrypt from 'bcrypt';
 
 export const SCHOOL_ID = '4d5d245a-69bd-4630-a3d8-92d9493595e4';
 export const SCHOOL_CODE = 'GFA010';

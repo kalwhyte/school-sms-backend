@@ -55,8 +55,8 @@ export class ParentsService {
   // ─────────────────────────────────────────────
 
   async create(schoolId: string, dto: CreateParentDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { schoolId_phone: { schoolId, phone: dto.phone! } },
+    const existingUser = await this.prisma.user.findFirst({
+      where: { phone: dto.phone!, schoolId },
     });
     if (existingUser) {
       throw new ConflictException(

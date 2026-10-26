@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
@@ -41,6 +42,22 @@ export class StudentsService {
       if (existing) {
         throw new ConflictException(
           'A user with this phone number already exists in this school.',
+        );
+      }
+    }
+
+    // 3. Check if email provided, check it's not already used in this school
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email.trim().toLowerCase(),
+          schoolId,
+        },
+        select: { id: true },
+      });
+      if (existingEmail) {
+        throw new ConflictException(
+          'A user with this email already exists in this school.',
         );
       }
     }
@@ -225,12 +242,42 @@ export class StudentsService {
   async update(schoolId: string, studentId: string, dto: UpdateStudentDto) {
     const student = await this.prisma.student.findFirst({
       where: { id: studentId, schoolId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+          },
+        },
+      },
     });
     if (!student) throw new NotFoundException('Student not found.');
 
-    if (dto.phone && dto.phone !== student.userId) {
+    // Validate the requested class belongs to this school.
+    if (dto.classId) {
+      const targetClass = await this.prisma.class.findFirst({
+        where: {
+          id: dto.classId,
+          schoolId,
+        },
+        select: { id: true },
+      });
+
+      if (!targetClass) {
+        throw new BadRequestException(
+          'The selected class does not belong to this school.',
+        );
+      }
+    }
+
+    if (dto.phone && dto.phone !== student.user?.phone) {
       const existing = await this.prisma.user.findFirst({
-        where: { phone: dto.phone, schoolId },
+        where: {
+          phone: dto.phone,
+          schoolId,
+          id: { not: student.userId ?? undefined },
+        },
       });
       if (existing) {
         throw new ConflictException(
@@ -239,10 +286,31 @@ export class StudentsService {
       }
     }
 
+    if (dto.email && dto.email !== student.user?.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email,
+          schoolId,
+          id: { not: student.userId ?? undefined },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          'A user with this email already exist in this school.',
+        );
+      }
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
       if (dto.phone !== undefined || dto.email !== undefined) {
+        if (!student.userId) {
+          throw new BadRequestException(
+            'This student has no linked user account.',
+          );
+        }
         await tx.user.update({
-          where: { id: student.userId! },
+          where: { id: student.userId },
           data: {
             ...(dto.phone !== undefined && { phone: dto.phone }),
             ...(dto.email !== undefined && { email: dto.email }),
@@ -250,20 +318,71 @@ export class StudentsService {
         });
       }
 
-      return tx.student.update({
+      const classChanged =
+        dto.classId !== undefined && dto.classId !== student.classId;
+
+      await tx.student.update({
         where: { id: studentId },
         data: {
-          ...(dto.fullName && { fullName: dto.fullName }),
-          ...(dto.dateOfBirth && { dob: new Date(dto.dateOfBirth) }), // dob not dateOfBirth
-          ...(dto.gender && { gender: dto.gender }),
+          ...(dto.fullName !== undefined && {
+            fullName: dto.fullName,
+          }),
+
+          ...(dto.dateOfBirth !== undefined && {
+            dob: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+          }),
+
+          ...(dto.gender !== undefined && {
+            gender: dto.gender,
+          }),
+
+          ...(dto.classId !== undefined && {
+            classId: dto.classId,
+          }),
+
           ...(dto.guardianName !== undefined && {
             guardianName: dto.guardianName,
           }),
-          ...(dto.photoUrl !== undefined && { photoUrl: dto.photoUrl }),
+
+          ...(dto.photoUrl !== undefined && {
+            photoUrl: dto.photoUrl,
+          }),
         },
+      });
+
+      // Preserve existing enrollment records and add the new enrollment.
+      if (classChanged && dto.classId) {
+        await tx.classEnrollment.upsert({
+          where: {
+            classId_studentId: {
+              classId: dto.classId,
+              studentId,
+            },
+          },
+          update: {},
+          create: {
+            classId: dto.classId,
+            studentId,
+          },
+        });
+      }
+
+      return tx.student.findUniqueOrThrow({
+        where: { id: studentId },
         include: {
-          user: { select: { phone: true, email: true, isActive: true } },
-          currentClass: { select: { id: true, name: true } },
+          user: {
+            select: {
+              phone: true,
+              email: true,
+              isActive: true,
+            },
+          },
+          currentClass: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
     });

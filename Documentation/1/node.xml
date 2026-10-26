@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cherrytree>
+  <node unique_id="1" master_id="0" name="sms" prog_lang="custom-colors" tags="" readonly="0" nosearch_me="0" nosearch_ch="0" custom_icon_id="0" is_bold="0" foreground="#99c1f1" ts_creation="1791733882" ts_lastsave="1791734535">
+    <rich_text>Starting script
+./start.sh
+
+create school first, it comes with a user the principal during creation.
+school must belong to a user
+use the user token and generate refresh token before logging in.
+user request for OTP using their registered phone number
+
+
+{   
+	"school": {    
+			 "id": "56a4625b-b58b-4190-8510-53c44e724fd4",
+			"name": "Whyte Academy",     
+			"address": "12 Aba Road, Port Harcourt, Rivers State",     
+			"logoUrl": "https://res.cloudinary.com/demo/logo.png",     
+			"schoolCode": "GFA011",    
+			 "subscriptionTier": "free",    
+			 "currency": "NGN",     "isActive": true,     
+			"createdAt": "2026-10-11T15:54:17.727Z",     
+			"updatedAt": "2026-10-11T15:54:17.727Z"   },   
+	"admin": {    
+			 "userId": "78e1d144-49b0-4feb-8ddf-a8aeb5f7fd2f",    
+			 "phone": "+2348012345671",     
+			"role": "admin",     	
+			"fullName": "Kal Whyte"   
+	}
+ }
+ 
+{   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3OGUxZDE0NC00OWIwLTRmZWItOGRkZi1hOGFlYjVmN2ZkMmYiLCJzY2hvb2xJZCI6IjU2YTQ2MjViLWI1OGItNDE5MC04NTEwLTUzYzQ0ZTcyNGZkNCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5MTczNDQ0MCwiZXhwIjoxNzkxODIwODQwfQ.io76J2hlqQ8Hzazzarw_vZlfkKQmD-pldscE8qw0qIc",   "refreshToken": "f5e61b1a7b1a7b2829a5c434a497f9333c4d8393193357380255601e50f93d15d9efb5036c55d8e535cd19622eee0ace5f5bbdbc54a3315cc2d41c5ebee7beff",   "user": {     "id": "78e1d144-49b0-4feb-8ddf-a8aeb5f7fd2f",     "schoolId": "56a4625b-b58b-4190-8510-53c44e724fd4",     "role": "admin",     "phone": "+2348012345671",     "fullName": "Kal Whyte",     "photoUrl": null   } }&lt;/span&gt;&lt;/body&gt;&lt;/html&gt;
+
+{   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3OGUxZDE0NC00OWIwLTRmZWItOGRkZi1hOGFlYjVmN2ZkMmYiLCJzY2hvb2xJZCI6IjU2YTQ2MjViLWI1OGItNDE5MC04NTEwLTUzYzQ0ZTcyNGZkNCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5MTczNDUyNiwiZXhwIjoxNzkxODIwOTI2fQ.eDrFOKqKLkiZRVOD_NmpHSDoNCN2RiQ_kpflbIN_Hg0",   "refreshToken": "d578e1f4c86e67c735d604aca326413113cf4e04e126f221880d5c893e2ff55a32abce854a058c024513992636cea349a703a542e9e0734a5b979dd5125c46c9" }&lt;/span&gt;&lt;/body&gt;&lt;/html&gt;</rich_text>
+  </node>
+</cherrytree>

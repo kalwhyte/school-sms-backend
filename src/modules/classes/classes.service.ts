@@ -94,6 +94,9 @@ export class ClassesService {
       }),
       this.prisma.class.count({ where }),
     ]);
+    this.logger.log(
+      `Classes listed for school ${schoolId}: ${data.length} returned of ${total} total`,
+    );
 
     return {
       data: (data as unknown as ClassRow[]).map((c) =>

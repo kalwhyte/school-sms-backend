@@ -6,6 +6,9 @@ import {
   ArrayNotEmpty,
   ValidateNested,
   IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -24,8 +27,9 @@ export class AttendanceEntryDto {
   @ApiPropertyOptional({
     example: 'Medical appointment, arrived late at 10:30am',
   })
-  @IsNotEmpty()
-  @ApiProperty({ example: 'Medical appointment, arrived late at 10:30am' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
   reason?: string;
 }
 

@@ -4,7 +4,6 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import * as crypto from 'crypto'; // Replaced bcrypt with Node.js's crypto module
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { StorageService } from '../../infrastructure/storage/storage.service';
 import { OnboardSchoolDto } from './dto/onboard-school.dto';
@@ -25,100 +24,247 @@ export class SchoolsService {
   // ─────────────────────────────────────────────
 
   async onboard(dto: OnboardSchoolDto) {
-    const { school: schoolDto, admin } = dto;
+    const schoolDto = dto.school;
+    const admin = dto.admin;
 
     if (!schoolDto || !admin) {
-      throw new ConflictException('School and admin details are required.');
-    }
-
-    // Guard: schoolCode must be globally unique
-    const existing = await this.prisma.school.findUnique({
-      where: { schoolCode: schoolDto.schoolCode },
-    });
-    if (existing) {
       throw new ConflictException(
-        `School code "${schoolDto.schoolCode}" is already taken.`,
+        'School and administrator details are required.',
       );
     }
-    console.log(existing);
 
-    // IMPORTANT: Using crypto.createHash('sha256') is a less secure alternative to bcrypt for password hashing.
-    // For production environments, it is highly recommended to install and use bcrypt or a similar robust password hashing library.
-    const hashed = crypto
-      .createHash('sha256')
-      .update(admin.password!)
-      .digest('hex');
+    const schoolCode = schoolDto.schoolCode!.trim().toUpperCase();
+    const phone = admin.phone!.trim();
+    const email = admin.email?.trim().toLowerCase() ?? null;
 
-    // Atomic: create School + User (admin) + Staff profile in one transaction
-    const result = await this.prisma.$transaction(async (tx) => {
-      const school = await tx.school.create({
-        data: {
-          name: schoolDto.name!,
-          address: schoolDto.address!,
-          schoolCode: schoolDto.schoolCode!,
-          currency: schoolDto.currency ?? 'NGN',
-          logoUrl: schoolDto.logoUrl ?? null,
-        },
-      });
-      console.log(school);
+    // Fast validation. Database constraints remain the final protection
+    // against concurrent duplicate registrations.
+    const existingSchool = await this.prisma.school.findUnique({
+      where: { schoolCode },
+      select: { id: true },
+    });
 
-      // Check phone not already used in this school (should be impossible for
-      // first admin, but guards re-runs / retries)
-      const existingUser = await tx.user.findUnique({
-        where: {
-          schoolId_phone: {
-            schoolId: school.id,
-            phone: admin.phone!,
+    if (existingSchool) {
+      throw new ConflictException('This school code is already registered.');
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ phone }, ...(email ? [{ email }] : [])],
+      },
+      select: { id: true },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        'This phone number or email is already registered.',
+      );
+    }
+
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const academicYear =
+      now.getUTCMonth() >= 8 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
+
+    const defaultClasses = [
+      { name: 'Pre-Nursery', level: 'preNursery' },
+      { name: 'Nursery 1', level: 'nursery1' },
+      { name: 'Nursery 2', level: 'nursery2' },
+      { name: 'Nursery 3', level: 'nursery3' },
+      { name: 'Primary 1', level: 'primary1' },
+      { name: 'Primary 2', level: 'primary2' },
+      { name: 'Primary 3', level: 'primary3' },
+      { name: 'Primary 4', level: 'primary4' },
+      { name: 'Primary 5', level: 'primary5' },
+      { name: 'Primary 6', level: 'primary6' },
+      { name: 'JSS 1', level: 'jss1' },
+      { name: 'JSS 2', level: 'jss2' },
+      { name: 'JSS 3', level: 'jss3' },
+      { name: 'SS 1', level: 'ss1' },
+      { name: 'SS 2', level: 'ss2' },
+      { name: 'SS 3', level: 'ss3' },
+    ] as const;
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const school = await tx.school.create({
+          data: {
+            name: schoolDto.name!.trim(),
+            address: schoolDto.address!.trim(),
+            schoolCode,
+            currency: schoolDto.currency ?? 'NGN',
+            logoUrl: schoolDto.logoUrl ?? null,
           },
-        },
+        });
+
+        const user = await tx.user.create({
+          data: {
+            schoolId: school.id,
+            phone,
+            email,
+            password: null,
+            role: 'admin',
+            isActive: true,
+          },
+        });
+
+        const staff = await tx.staff.create({
+          data: {
+            userId: user.id,
+            schoolId: school.id,
+            fullName: admin.fullName!.trim(),
+            roleTitle: admin.roleTitle?.trim() || 'Administrator',
+            isActive: true,
+          },
+        });
+
+        await tx.class.createMany({
+          data: defaultClasses.map((item) => ({
+            schoolId: school.id,
+            name: item.name,
+            level: item.level,
+            arm: 'A',
+            academicYear,
+            term: 'first',
+          })),
+        });
+
+        return { school, user, staff };
       });
-      if (existingUser) {
+
+      this.logger.log(
+        `School onboarded: ${result.school.schoolCode} (${result.school.id})`,
+      );
+
+      return {
+        school: this.formatSchool(result.school),
+        admin: {
+          userId: result.user.id,
+          phone: result.user.phone,
+          email: result.user.email,
+          role: result.user.role,
+          fullName: result.staff.fullName,
+          verified: false,
+        },
+        nextStep: {
+          endpoint: '/auth/request-otp',
+          schoolCode: result.school.schoolCode,
+          message:
+            'Request an OTP using the administrator phone number or email.',
+        },
+      };
+    } catch (error: unknown) {
+      // Prisma P2002 = unique constraint violation.
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
         throw new ConflictException(
-          'A user with this phone number already exists in this school.',
+          'The school code, phone number, or email is already registered.',
         );
       }
-      console.log(existingUser);
 
-      const user = await tx.user.create({
-        data: {
-          schoolId: school.id,
-          phone: admin.phone!,
-          password: hashed,
-          role: 'admin',
-          isActive: true,
-        },
-      });
-      console.log(user);
-
-      const staff = await tx.staff.create({
-        data: {
-          userId: user.id,
-          schoolId: school.id,
-          fullName: admin.fullName!,
-          roleTitle: admin.roleTitle ?? 'Administrator',
-          isActive: true,
-        },
-      });
-      console.log(staff);
-
-      return { school, user, staff };
-    });
-    console.log(result);
-
-    this.logger.log(
-      `School onboarded: ${result.school.schoolCode} (id: ${result.school.id})`,
-    );
-
-    return {
-      school: this.formatSchool(result.school),
-      admin: {
-        userId: result.user.id,
-        phone: result.user.phone,
-        role: result.user.role,
-        fullName: result.staff.fullName,
-      },
-    };
+      throw error;
+    }
   }
+
+  // async onboard(dto: OnboardSchoolDto) {
+  //   const { school: schoolDto, admin } = dto;
+
+  //   if (!schoolDto || !admin) {
+  //     throw new ConflictException('School and admin details are required.');
+  //   }
+
+  //   // Guard: schoolCode must be globally unique
+  //   const existing = await this.prisma.school.findUnique({
+  //     where: { schoolCode: schoolDto.schoolCode },
+  //   });
+  //   if (existing) {
+  //     throw new ConflictException(
+  //       `School code "${schoolDto.schoolCode}" is already taken.`,
+  //     );
+  //   }
+  //   console.log(existing);
+
+  //   // IMPORTANT: Using crypto.createHash('sha256') is a less secure alternative to bcrypt for password hashing.
+  //   // For production environments, it is highly recommended to install and use bcrypt or a similar robust password hashing library.
+  //   const hashed = crypto
+  //     .createHash('sha256')
+  //     .update(admin.password!)
+  //     .digest('hex');
+
+  //   // Atomic: create School + User (admin) + Staff profile in one transaction
+  //   const result = await this.prisma.$transaction(async (tx) => {
+  //     const school = await tx.school.create({
+  //       data: {
+  //         name: schoolDto.name!,
+  //         address: schoolDto.address!,
+  //         schoolCode: schoolDto.schoolCode!,
+  //         currency: schoolDto.currency ?? 'NGN',
+  //         logoUrl: schoolDto.logoUrl ?? null,
+  //       },
+  //     });
+  //     console.log(school);
+
+  //     // Check phone not already used in this school (should be impossible for
+  //     // first admin, but guards re-runs / retries)
+  //     const existingUser = await tx.user.findUnique({
+  //       where: {
+  //         schoolId_phone: {
+  //           schoolId: school.id,
+  //           phone: admin.phone!,
+  //         },
+  //       },
+  //     });
+  //     if (existingUser) {
+  //       throw new ConflictException(
+  //         'A user with this phone number already exists in this school.',
+  //       );
+  //     }
+  //     console.log(existingUser);
+
+  //     const user = await tx.user.create({
+  //       data: {
+  //         schoolId: school.id,
+  //         phone: admin.phone!,
+  //         password: hashed,
+  //         role: 'admin',
+  //         isActive: true,
+  //       },
+  //     });
+  //     console.log(user);
+
+  //     const staff = await tx.staff.create({
+  //       data: {
+  //         userId: user.id,
+  //         schoolId: school.id,
+  //         fullName: admin.fullName!,
+  //         roleTitle: admin.roleTitle ?? 'Administrator',
+  //         isActive: true,
+  //       },
+  //     });
+  //     console.log(staff);
+
+  //     return { school, user, staff };
+  //   });
+  //   console.log(result);
+
+  //   this.logger.log(
+  //     `School onboarded: ${result.school.schoolCode} (id: ${result.school.id})`,
+  //   );
+
+  //   return {
+  //     school: this.formatSchool(result.school),
+  //     admin: {
+  //       userId: result.user.id,
+  //       phone: result.user.phone,
+  //       role: result.user.role,
+  //       fullName: result.staff.fullName,
+  //     },
+  //   };
+  // }
 
   // ─────────────────────────────────────────────
   // GET ONE
@@ -192,7 +338,10 @@ export class SchoolsService {
   // UPLOAD LOGO
   // ─────────────────────────────────────────────
 
-  async uploadLogo(schoolId: string, file: any) {
+  async uploadLogo(
+    schoolId: string,
+    file: Parameters<StorageService['uploadImage']>[0],
+  ) {
     await this.assertExists(schoolId);
 
     const uploadResult = await this.storage.uploadImage(file, {

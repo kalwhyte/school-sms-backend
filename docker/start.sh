@@ -9,11 +9,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  School SMS Backend — Starting"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# ── Wait for postgres to be ready ────────────────────────────────────────────
+# ── Wait for postgres to be ready (TCP/SQL check, not migrate status) ────────
 echo "⏳  Waiting for PostgreSQL..."
-until npx prisma migrate status > /dev/null 2>&1; do
-  echo "   PostgreSQL not ready — retrying in 2s..."
-  sleep 2
+until node -e "const net=require('net');const s=net.connect(+process.env.DATABASE_PORT,process.env.DATABASE_HOST);s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));"; do
+  echo "   PostgreSQL not ready — retrying in 3s..."
+  sleep 3
 done
 echo "✅  PostgreSQL ready"
 
